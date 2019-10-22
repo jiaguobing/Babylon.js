@@ -45306,6 +45306,7 @@ var PBRMaterialPropertyGridComponent = /** @class */ (function (_super) {
             { label: "Surface Albedo", value: 60 },
             { label: "Reflectance 0", value: 61 },
             { label: "Metallic", value: 62 },
+            { label: "Metallic F0", value: 71 },
             { label: "Roughness", value: 63 },
             { label: "AlphaG", value: 64 },
             { label: "NdotV", value: 65 },
@@ -45336,6 +45337,8 @@ var PBRMaterialPropertyGridComponent = /** @class */ (function (_super) {
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_5__["CheckBoxLineComponent"], { label: "Use physical light falloff", target: material, propertyName: "usePhysicalLightFalloff ", onPropertyChangedObservable: this.props.onPropertyChangedObservable })),
             react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lineContainerComponent__WEBPACK_IMPORTED_MODULE_3__["LineContainerComponent"], { globalState: this.props.globalState, title: "METALLIC WORKFLOW" },
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_sliderLineComponent__WEBPACK_IMPORTED_MODULE_7__["SliderLineComponent"], { label: "Metallic", target: material, propertyName: "metallic", minimum: 0, maximum: 1, step: 0.01, onPropertyChangedObservable: this.props.onPropertyChangedObservable }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_sliderLineComponent__WEBPACK_IMPORTED_MODULE_7__["SliderLineComponent"], { label: "Metallic F0", target: material, propertyName: "metallicF0Factor", minimum: 0, maximum: 1, step: 0.01, onPropertyChangedObservable: this.props.onPropertyChangedObservable }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_5__["CheckBoxLineComponent"], { label: "Metallic F0 From Map", target: material, propertyName: "useMetallicF0FactorFromMetallicTexture", onValueChanged: function () { return _this.forceUpdate(); }, onPropertyChangedObservable: this.props.onPropertyChangedObservable }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_sliderLineComponent__WEBPACK_IMPORTED_MODULE_7__["SliderLineComponent"], { label: "Roughness", target: material, propertyName: "roughness", minimum: 0, maximum: 1, step: 0.01, onPropertyChangedObservable: this.props.onPropertyChangedObservable })),
             react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lineContainerComponent__WEBPACK_IMPORTED_MODULE_3__["LineContainerComponent"], { globalState: this.props.globalState, title: "CLEAR COAT" },
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_5__["CheckBoxLineComponent"], { label: "Enabled", target: material.clearCoat, propertyName: "isEnabled", onValueChanged: function () { return _this.forceUpdate(); }, onPropertyChangedObservable: this.props.onPropertyChangedObservable }),
@@ -45804,6 +45807,7 @@ var TexturePropertyGridComponent = /** @class */ (function (_super) {
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Class", value: texture.getClassName() }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Has alpha", value: texture.hasAlpha ? "Yes" : "No" }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Is 3D", value: texture.is3D ? "Yes" : "No" }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Is 2D array", value: texture.is2DArray ? "Yes" : "No" }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Is cube", value: texture.isCube ? "Yes" : "No" }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Is render target", value: texture.isRenderTarget ? "Yes" : "No" }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_textLineComponent__WEBPACK_IMPORTED_MODULE_5__["TextLineComponent"], { label: "Has mipmaps", value: !texture.noMipmap ? "Yes" : "No" }),
@@ -47336,6 +47340,9 @@ var GLTFComponent = /** @class */ (function (_super) {
         extensionStates["MSFT_audio_emitter"] = extensionStates["MSFT_audio_emitter"] || { enabled: true };
         extensionStates["KHR_draco_mesh_compression"] = extensionStates["KHR_draco_mesh_compression"] || { enabled: true };
         extensionStates["KHR_materials_pbrSpecularGlossiness"] = extensionStates["KHR_materials_pbrSpecularGlossiness"] || { enabled: true };
+        extensionStates["KHR_materials_clearcoat"] = extensionStates["KHR_materials_clearcoat"] || { enabled: true };
+        extensionStates["KHR_materials_sheen"] = extensionStates["KHR_materials_sheen"] || { enabled: true };
+        extensionStates["KHR_materials_specular"] = extensionStates["KHR_materials_specular"] || { enabled: true };
         extensionStates["KHR_materials_unlit"] = extensionStates["KHR_materials_unlit"] || { enabled: true };
         extensionStates["KHR_lights_punctual"] = extensionStates["KHR_lights_punctual"] || { enabled: true };
         extensionStates["KHR_texture_transform"] = extensionStates["KHR_texture_transform"] || { enabled: true };
@@ -47420,6 +47427,9 @@ var GLTFComponent = /** @class */ (function (_super) {
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "MSFT_audio_emitter", isSelected: function () { return extensionStates["MSFT_audio_emitter"].enabled; }, onSelect: function (value) { return extensionStates["MSFT_audio_emitter"].enabled = value; } }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_draco_mesh_compression", isSelected: function () { return extensionStates["KHR_draco_mesh_compression"].enabled; }, onSelect: function (value) { return extensionStates["KHR_draco_mesh_compression"].enabled = value; } }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_materials_pbrSpecularGlossiness", isSelected: function () { return extensionStates["KHR_materials_pbrSpecularGlossiness"].enabled; }, onSelect: function (value) { return extensionStates["KHR_materials_pbrSpecularGlossiness"].enabled = value; } }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_materials_clearcoat", isSelected: function () { return extensionStates["KHR_materials_clearcoat"].enabled; }, onSelect: function (value) { return extensionStates["KHR_materials_clearcoat"].enabled = value; } }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_materials_sheen", isSelected: function () { return extensionStates["KHR_materials_sheen"].enabled; }, onSelect: function (value) { return extensionStates["KHR_materials_sheen"].enabled = value; } }),
+                react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_materials_specular", isSelected: function () { return extensionStates["KHR_materials_specular"].enabled; }, onSelect: function (value) { return extensionStates["KHR_materials_specular"].enabled = value; } }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_materials_unlit", isSelected: function () { return extensionStates["KHR_materials_unlit"].enabled; }, onSelect: function (value) { return extensionStates["KHR_materials_unlit"].enabled = value; } }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_lights_punctual", isSelected: function () { return extensionStates["KHR_lights_punctual"].enabled; }, onSelect: function (value) { return extensionStates["KHR_lights_punctual"].enabled = value; } }),
                 react__WEBPACK_IMPORTED_MODULE_1__["createElement"](_lines_checkBoxLineComponent__WEBPACK_IMPORTED_MODULE_3__["CheckBoxLineComponent"], { label: "KHR_texture_transform", isSelected: function () { return extensionStates["KHR_texture_transform"].enabled; }, onSelect: function (value) { return extensionStates["KHR_texture_transform"].enabled = value; } }),
@@ -50243,13 +50253,13 @@ var Inspector = /** @class */ (function () {
             scene = babylonjs_Misc_observable__WEBPACK_IMPORTED_MODULE_3__["EngineStore"].LastCreatedScene;
         }
         this._Scene = scene;
-        var canvas = scene ? scene.getEngine().getRenderingCanvas() : babylonjs_Misc_observable__WEBPACK_IMPORTED_MODULE_3__["EngineStore"].LastCreatedEngine.getRenderingCanvas();
+        var rootElement = scene ? scene.getEngine().getInputElement() : babylonjs_Misc_observable__WEBPACK_IMPORTED_MODULE_3__["EngineStore"].LastCreatedEngine.getInputElement();
         if (options.embedMode && options.showExplorer && options.showInspector) {
             if (options.popup) {
                 this._CreateEmbedHost(scene, options, this._CreatePopup("INSPECTOR", "_EmbedHostWindow"), Inspector.OnSelectionChangeObservable);
             }
             else {
-                var parentControl = (options.globalRoot ? options.globalRoot : canvas.parentElement);
+                var parentControl = (options.globalRoot ? options.globalRoot : rootElement.parentElement);
                 if (!options.overlay && !this._NewCanvasContainer) {
                     this._CreateCanvasContainer(parentControl);
                 }
@@ -50283,7 +50293,7 @@ var Inspector = /** @class */ (function () {
             }
         }
         else {
-            var parentControl = (options.globalRoot ? options.globalRoot : canvas.parentElement);
+            var parentControl = (options.globalRoot ? options.globalRoot : rootElement.parentElement);
             if (!options.overlay && !this._NewCanvasContainer) {
                 this._CreateCanvasContainer(parentControl);
             }

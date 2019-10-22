@@ -11243,7 +11243,7 @@ declare module BABYLON {
     /**
      * Strong typing of a pointer move action.
      */
-    export type PointerMoveStageAction = (unTranslatedPointerX: number, unTranslatedPointerY: number, pickResult: Nullable<PickingInfo>, isMeshPicked: boolean, canvas: HTMLCanvasElement) => Nullable<PickingInfo>;
+    export type PointerMoveStageAction = (unTranslatedPointerX: number, unTranslatedPointerY: number, pickResult: Nullable<PickingInfo>, isMeshPicked: boolean, element: HTMLElement) => Nullable<PickingInfo>;
     /**
      * Strong typing of a pointer up/down action.
      */
@@ -12472,6 +12472,39 @@ declare module BABYLON {
              * @param textureType defines the texture Type (Engine.TEXTURETYPE_UNSIGNED_INT, Engine.TEXTURETYPE_FLOAT...)
              */
             updateRawTexture3D(texture: InternalTexture, data: Nullable<ArrayBufferView>, format: number, invertY: boolean, compression: Nullable<string>, textureType: number): void;
+            /**
+             * Creates a new raw 2D array texture
+             * @param data defines the data used to create the texture
+             * @param width defines the width of the texture
+             * @param height defines the height of the texture
+             * @param depth defines the number of layers of the texture
+             * @param format defines the format of the texture
+             * @param generateMipMaps defines if the engine must generate mip levels
+             * @param invertY defines if data must be stored with Y axis inverted
+             * @param samplingMode defines the required sampling mode (like Texture.NEAREST_SAMPLINGMODE)
+             * @param compression defines the compressed used (can be null)
+             * @param textureType defines the compressed used (can be null)
+             * @returns a new raw 2D array texture (stored in an InternalTexture)
+             */
+            createRawTexture2DArray(data: Nullable<ArrayBufferView>, width: number, height: number, depth: number, format: number, generateMipMaps: boolean, invertY: boolean, samplingMode: number, compression: Nullable<string>, textureType: number): InternalTexture;
+            /**
+             * Update a raw 2D array texture
+             * @param texture defines the texture to update
+             * @param data defines the data to store
+             * @param format defines the data format
+             * @param invertY defines if data must be stored with Y axis inverted
+             */
+            updateRawTexture2DArray(texture: InternalTexture, data: Nullable<ArrayBufferView>, format: number, invertY: boolean): void;
+            /**
+             * Update a raw 2D array texture
+             * @param texture defines the texture to update
+             * @param data defines the data to store
+             * @param format defines the data format
+             * @param invertY defines if data must be stored with Y axis inverted
+             * @param compression defines the used compression (can be null)
+             * @param textureType defines the texture Type (Engine.TEXTURETYPE_UNSIGNED_INT, Engine.TEXTURETYPE_FLOAT...)
+             */
+            updateRawTexture2DArray(texture: InternalTexture, data: Nullable<ArrayBufferView>, format: number, invertY: boolean, compression: Nullable<string>, textureType: number): void;
         }
 }
 declare module BABYLON {
@@ -14774,6 +14807,19 @@ declare module BABYLON {
     }
 }
 declare module BABYLON {
+    /**
+     * Interface used to define additional presentation attributes
+     */
+    export interface IVRPresentationAttributes {
+        /**
+         * Defines a boolean indicating that we want to get 72hz mode on Oculus Browser (default is off eg. 60hz)
+         */
+        highRefreshRate: boolean;
+        /**
+         * Enables foveation in VR to improve perf. 0 none, 1 low, 2 medium, 3 high (Default is 1)
+         */
+        foveationLevel: number;
+    }
         interface Engine {
             /** @hidden */
             _vrDisplay: any;
@@ -14832,6 +14878,10 @@ declare module BABYLON {
             initWebVRAsync(): Promise<IDisplayChangedEventArgs>;
             /** @hidden */
             _getVRDisplaysAsync(): Promise<IDisplayChangedEventArgs>;
+            /**
+             * Gets or sets the presentation attributes used to configure VR rendering
+             */
+            vrPresentationAttributes?: IVRPresentationAttributes;
             /**
              * Call this function to switch to webVR mode
              * Will do nothing if webVR is not supported or if there is no webVR device
@@ -19079,6 +19129,7 @@ declare module BABYLON {
         private _vectors3;
         private _vectors4;
         private _matrices;
+        private _matrixArrays;
         private _matrices3x3;
         private _matrices2x2;
         private _vectors2Arrays;
@@ -19215,6 +19266,13 @@ declare module BABYLON {
          * @return the material itself allowing "fluent" like uniform updates
          */
         setMatrix(name: string, value: Matrix): ShaderMaterial;
+        /**
+         * Set a float32Array in the shader from a matrix array.
+         * @param name Define the name of the uniform as defined in the shader
+         * @param value Define the value to give to the uniform
+         * @return the material itself allowing "fluent" like uniform updates
+         */
+        setMatrices(name: string, value: Matrix[]): ShaderMaterial;
         /**
          * Set a mat3 in the shader from a Float32Array.
          * @param name Define the name of the uniform as defined in the shader
@@ -25390,6 +25448,7 @@ declare module BABYLON {
         private _expandable;
         private _shapeCounter;
         private _copy;
+        private _mustResetCopy;
         private _color;
         private _computeParticleColor;
         private _computeParticleTexture;
@@ -25402,6 +25461,8 @@ declare module BABYLON {
         private _particlesIntersect;
         private _needs32Bits;
         private _isNotBuilt;
+        private _lastParticleId;
+        private _idxOfId;
         /**
          * Creates a SPS (Solid Particle System) object.
          * @param name (String) is the SPS name, this will be the underlying mesh name.
@@ -25439,18 +25500,71 @@ declare module BABYLON {
          * @param options {facetNb} (optional integer, default 1) is the number of mesh facets per particle, this parameter is overriden by the parameter `number` if any
          * {delta} (optional integer, default 0) is the random extra number of facets per particle , each particle will have between `facetNb` and `facetNb + delta` facets
          * {number} (optional positive integer) is the wanted number of particles : each particle is built with `mesh_total_facets / number` facets
+         * {storage} (optional existing array) is an array where the particles will be stored for a further use instead of being inserted in the SPS.
          * @returns the current SPS
          */
         digest(mesh: Mesh, options?: {
             facetNb?: number;
             number?: number;
             delta?: number;
+            storage?: [];
         }): SolidParticleSystem;
+        /**
+         * Unrotate the fixed normals in case the mesh was built with pre-rotated particles, ex : use of positionFunction in addShape()
+         * @hidden
+         */
         private _unrotateFixedNormals;
+        /**
+         * Resets the temporary working copy particle
+         * @hidden
+         */
         private _resetCopy;
+        /**
+         * Inserts the shape model geometry in the global SPS mesh by updating the positions, indices, normals, colors, uvs arrays
+         * @param p the current index in the positions array to be updated
+         * @param shape a Vector3 array, the shape geometry
+         * @param positions the positions array to be updated
+         * @param meshInd the shape indices array
+         * @param indices the indices array to be updated
+         * @param meshUV the shape uv array
+         * @param uvs the uv array to be updated
+         * @param meshCol the shape color array
+         * @param colors the color array to be updated
+         * @param meshNor the shape normals array
+         * @param normals the normals array to be updated
+         * @param idx the particle index
+         * @param idxInShape the particle index in its shape
+         * @param options the addShape() method  passed options
+         * @hidden
+         */
         private _meshBuilder;
+        /**
+         * Returns a shape Vector3 array from positions float array
+         * @param positions float array
+         * @returns a vector3 array
+         * @hidden
+         */
         private _posToShape;
+        /**
+         * Returns a shapeUV array from a float uvs (array deep copy)
+         * @param uvs as a float array
+         * @returns a shapeUV array
+         * @hidden
+         */
         private _uvsToShapeUV;
+        /**
+         * Adds a new particle object in the particles array
+         * @param idx particle index in particles array
+         * @param id particle id
+         * @param idxpos positionIndex : the starting index of the particle vertices in the SPS "positions" array
+         * @param idxind indiceIndex : he starting index of the particle indices in the SPS "indices" array
+         * @param model particle ModelShape object
+         * @param shapeId model shape identifier
+         * @param idxInShape index of the particle in the current model
+         * @param bInfo model bounding info object
+         * @param storage target storage array, if any
+         * @hidden
+         */
         private _addParticle;
         /**
          * Adds some particles to the SPS from the model shape. Returns the shape id.
@@ -25459,12 +25573,18 @@ declare module BABYLON {
          * @param nb (positive integer) the number of particles to be created from this model
          * @param options {positionFunction} is an optional javascript function to called for each particle on SPS creation.
          * {vertexFunction} is an optional javascript function to called for each vertex of each particle on SPS creation
+         * {storage} (optional existing array) is an array where the particles will be stored for a further use instead of being inserted in the SPS.
          * @returns the number of shapes in the system
          */
         addShape(mesh: Mesh, nb: number, options?: {
             positionFunction?: any;
             vertexFunction?: any;
+            storage?: [];
         }): number;
+        /**
+         * Rebuilds a particle back to its just built status : if needed, recomputes the custom positions and vertices
+         * @hidden
+         */
         private _rebuildParticle;
         /**
          * Rebuilds the whole mesh and updates the VBO : custom positions and vertices are recomputed if needed.
@@ -25483,6 +25603,31 @@ declare module BABYLON {
          */
         removeParticles(start: number, end: number): SolidParticle[];
         /**
+         * Inserts some pre-created particles in the solid particle system so that they can be managed by setParticles().
+         * @param solidParticleArray an array populated with Solid Particles objects
+         * @returns the SPS
+         */
+        insertParticlesFromArray(solidParticleArray: SolidParticle[]): SolidParticleSystem;
+        /**
+         * Creates a new particle and modifies the SPS mesh geometry :
+         * - calls _meshBuilder() to increase the SPS mesh geometry step by step
+         * - calls _addParticle() to populate the particle array
+         * factorized code from addShape() and insertParticlesFromArray()
+         * @param idx particle index in the particles array
+         * @param i particle index in its shape
+         * @param modelShape particle ModelShape object
+         * @param shape shape vertex array
+         * @param meshInd shape indices array
+         * @param meshUV shape uv array
+         * @param meshCol shape color array
+         * @param meshNor shape normals array
+         * @param bbInfo shape bounding info
+         * @param storage target particle storage
+         * @options addShape() passed options
+         * @hidden
+         */
+        private _insertNewParticle;
+        /**
          *  Sets all the particles : this method actually really updates the mesh according to the particle positions, rotations, colors, textures, etc.
          *  This method calls `updateParticle()` for each particle of the SPS.
          *  For an animated SPS, it is usually called within the render loop.
@@ -25497,6 +25642,25 @@ declare module BABYLON {
         * Disposes the SPS.
         */
         dispose(): void;
+        /**
+         * Returns a SolidParticle object from its identifier : particle.id
+         * @param id (integer) the particle Id
+         * @returns the searched particle or null if not found in the SPS.
+         */
+        getParticleById(id: number): Nullable<SolidParticle>;
+        /**
+         * Returns a new array populated with the particles having the passed shapeId.
+         * @param shapeId (integer) the shape identifier
+         * @returns a new solid particle array
+         */
+        getParticlesByShapeId(shapeId: number): SolidParticle[];
+        /**
+         * Populates the passed array "ref" with the particles having the passed shapeId.
+         * @param shapeId the shape identifier
+         * @returns the SPS
+         * @param ref
+         */
+        getParticlesByShapeIdToRef(shapeId: number, ref: SolidParticle[]): SolidParticleSystem;
         /**
          * Visibilty helper : Recomputes the visible size according to the mesh bounding box
          * doc : http://doc.babylonjs.com/how_to/Solid_Particle_System#sps-visibility
@@ -25653,6 +25817,10 @@ declare module BABYLON {
          */
         idx: number;
         /**
+         * particle identifier
+         */
+        id: number;
+        /**
          * The color of the particle
          */
         color: Nullable<Color4>;
@@ -25762,7 +25930,8 @@ declare module BABYLON {
         /**
          * Creates a Solid Particle object.
          * Don't create particles manually, use instead the Solid Particle System internal tools like _addParticle()
-         * @param particleIndex (integer) is the particle index in the Solid Particle System pool. It's also the particle identifier.
+         * @param particleIndex (integer) is the particle index in the Solid Particle System pool.
+         * @param particleId (integer) is the particle identifier. Unless some particles are removed from the SPS, it's the same value than the particle idx.
          * @param positionIndex (integer) is the starting index of the particle vertices in the SPS "positions" array.
          * @param indiceIndex (integer) is the starting index of the particle indices in the SPS "indices" array.
          * @param model (ModelShape) is a reference to the model shape on what the particle is designed.
@@ -25771,7 +25940,13 @@ declare module BABYLON {
          * @param sps defines the sps it is associated to
          * @param modelBoundingInfo is the reference to the model BoundingInfo used for intersection computations.
          */
-        constructor(particleIndex: number, positionIndex: number, indiceIndex: number, model: Nullable<ModelShape>, shapeId: number, idxInShape: number, sps: SolidParticleSystem, modelBoundingInfo?: Nullable<BoundingInfo>);
+        constructor(particleIndex: number, particleId: number, positionIndex: number, indiceIndex: number, model: Nullable<ModelShape>, shapeId: number, idxInShape: number, sps: SolidParticleSystem, modelBoundingInfo?: Nullable<BoundingInfo>);
+        /**
+         * Copies the particle property values into the existing target : position, rotation, scaling, uvs, colors, pivot, parent, visibility, alive
+         * @param target the particle target
+         * @returns the current particle
+         */
+        copyToRef(target: SolidParticle): SolidParticle;
         /**
          * Legacy support, changed scale to scaling
          */
@@ -27020,8 +27195,10 @@ declare module BABYLON {
          * @see https://doc.babylonjs.com/how_to/parenting
          */
         parent: Nullable<Node>;
-        private addToSceneRootNodes;
-        private removeFromSceneRootNodes;
+        /** @hidden */
+        _addToSceneRootNodes(): void;
+        /** @hidden */
+        _removeFromSceneRootNodes(): void;
         private _animationPropertiesOverride;
         /**
          * Gets or sets the animation properties override
@@ -27047,9 +27224,8 @@ declare module BABYLON {
          * Creates a new Node
          * @param name the name and id to be given to this node
          * @param scene the scene this node will be added to
-         * @param addToRootNodes the node will be added to scene.rootNodes
          */
-        constructor(name: string, scene?: Nullable<Scene>, addToRootNodes?: boolean);
+        constructor(name: string, scene?: Nullable<Scene>);
         /**
          * Gets the scene of the node
          * @returns a scene
@@ -27901,6 +28077,10 @@ declare module BABYLON {
          * Define if the texture is a 3d texture (webgl 2) or if false a 2d texture.
          */
         is3D: boolean;
+        /**
+         * Define if the texture is a 2d array texture (webgl 2) or if false a 2d texture.
+         */
+        is2DArray: boolean;
         /**
          * Define if the texture contains data in gamma space (most of the png/jpg aside bump).
          * HDR texture are usually stored in linear space.
@@ -29250,12 +29430,13 @@ declare module BABYLON {
         /** @hidden */
         _workingContext: Nullable<CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D>;
         /** @hidden */
-        _bindedRenderFunction: any;
+        _boundRenderFunction: any;
         private _vaoRecordInProgress;
         private _mustWipeVertexAttributes;
         private _emptyTexture;
         private _emptyCubeTexture;
         private _emptyTexture3D;
+        private _emptyTexture2DArray;
         /** @hidden */
         _frameHandler: number;
         private _nextFreeTextureSlots;
@@ -29285,6 +29466,10 @@ declare module BABYLON {
          * Gets the default empty 3D texture
          */
         readonly emptyTexture3D: InternalTexture;
+        /**
+         * Gets the default empty 2D array texture
+         */
+        readonly emptyTexture2DArray: InternalTexture;
         /**
          * Gets the default empty cube texture
          */
@@ -29884,6 +30069,21 @@ declare module BABYLON {
          * @returns a new raw 3D texture (stored in an InternalTexture)
          */
         createRawTexture3D(data: Nullable<ArrayBufferView>, width: number, height: number, depth: number, format: number, generateMipMaps: boolean, invertY: boolean, samplingMode: number, compression?: Nullable<string>, textureType?: number): InternalTexture;
+        /**
+         * Creates a new raw 2D array texture
+         * @param data defines the data used to create the texture
+         * @param width defines the width of the texture
+         * @param height defines the height of the texture
+         * @param depth defines the number of layers of the texture
+         * @param format defines the format of the texture
+         * @param generateMipMaps defines if the engine must generate mip levels
+         * @param invertY defines if data must be stored with Y axis inverted
+         * @param samplingMode defines the required sampling mode (like Texture.NEAREST_SAMPLINGMODE)
+         * @param compression defines the compressed used (can be null)
+         * @param textureType defines the compressed used (can be null)
+         * @returns a new raw 2D array texture (stored in an InternalTexture)
+         */
+        createRawTexture2DArray(data: Nullable<ArrayBufferView>, width: number, height: number, depth: number, format: number, generateMipMaps: boolean, invertY: boolean, samplingMode: number, compression?: Nullable<string>, textureType?: number): InternalTexture;
         private _unpackFlipYCached;
         /**
          * In case you are sharing the context with other applications, it might
@@ -30261,13 +30461,17 @@ declare module BABYLON {
          */
         Raw3D = 10,
         /**
+         * Texture content is raw 2D array data
+         */
+        Raw2DArray = 11,
+        /**
          * Texture content is a depth texture
          */
-        Depth = 11,
+        Depth = 12,
         /**
          * Texture data comes from a raw cube data encoded with RGBD
          */
-        CubeRawRGBD = 12
+        CubeRawRGBD = 13
     }
     /**
      * Class used to store data associated with WebGL texture data for the engine
@@ -30288,6 +30492,10 @@ declare module BABYLON {
          * Defines if the texture contains 3D data
          */
         is3D: boolean;
+        /**
+         * Defines if the texture contains 2D array data
+         */
+        is2DArray: boolean;
         /**
          * Defines if the texture contains multiview data
          */
@@ -31356,6 +31564,11 @@ declare module BABYLON {
         private _onFullscreenChange;
         private _onPointerLockChange;
         /**
+         * Gets the HTML element used to attach event listeners
+         * @returns a HTML element
+         */
+        getInputElement(): Nullable<HTMLElement>;
+        /**
          * Creates a new engine
          * @param canvasOrContext defines the canvas or WebGL context to use for rendering. If you provide a WebGL context, Babylon.js will not hook events on the canvas (like pointers, keyboards, etc...) so no event observables will be available. This is mostly used when Babylon.js is used as a plugin on a system which alreay used the WebGL context
          * @param antialias defines enable antialiasing (default: false)
@@ -31385,6 +31598,11 @@ declare module BABYLON {
          * @returns a client rectanglee
          */
         getRenderingCanvasClientRect(): Nullable<ClientRect>;
+        /**
+         * Gets the client rect of the HTML element used for events
+         * @returns a client rectanglee
+         */
+        getInputElementClientRect(): Nullable<ClientRect>;
         /**
          * Gets a boolean indicating that the engine is running in deterministic lock step mode
          * @see http://doc.babylonjs.com/babylon101/animations#deterministic-lockstep
@@ -31709,7 +31927,11 @@ declare module BABYLON {
         /** @hidden */
         _convertRGBtoRGBATextureData(rgbData: any, width: number, height: number, textureType: number): ArrayBufferView;
         protected _rebuildBuffers(): void;
+        /** @hidden */
+        _renderFrame(): void;
         _renderLoop(): void;
+        /** @hidden */
+        _renderViews(): boolean;
         /**
          * Toggle full screen mode
          * @param requestPointerLock defines if a pointer lock should be requested from the user
@@ -34920,9 +35142,11 @@ declare module BABYLON {
         /**
          * Instantiate or clone all meshes and add the new ones to the scene.
          * Skeletons and animation groups will all be cloned
+         * @param nameFunction defines an optional function used to get new names for clones
+         * @param cloneMaterials defines an optional boolean that defines if materials must be cloned as well (false by default)
          * @returns a list of rootNodes, skeletons and aniamtion groups that were duplicated
          */
-        instantiateModelsToScene(): InstantiatedEntries;
+        instantiateModelsToScene(nameFunction?: (sourceName: string) => string, cloneMaterials?: boolean): InstantiatedEntries;
         /**
          * Adds all the assets from the container to the scene.
          */
@@ -41210,7 +41434,7 @@ declare module BABYLON {
         private _webVRpresenting;
         private _hasEnteredVR;
         private _fullscreenVRpresenting;
-        private _canvas;
+        private _inputElement;
         private _webVRCamera;
         private _vrDeviceOrientationCamera;
         private _deviceOrientationCamera;
@@ -41568,10 +41792,10 @@ declare module BABYLON {
         /**
          * Initializes the canvas to be added/removed upon entering/exiting xr
          * @param engine the Babylon engine
-         * @param onStateChangedObservable the mechanism by which the canvas will be added/removed based on XR state
          * @param canvas The canvas to be added/removed (If not specified a full screen canvas will be created)
+         * @param onStateChangedObservable the mechanism by which the canvas will be added/removed based on XR state
          */
-        constructor(engine: ThinEngine, onStateChangedObservable: Observable<WebXRState>, canvas?: HTMLCanvasElement);
+        constructor(engine: ThinEngine, canvas?: HTMLCanvasElement, onStateChangedObservable?: Observable<WebXRState>);
         /**
          * Disposes of the object
          */
@@ -41626,9 +41850,10 @@ declare module BABYLON {
         /**
          * Initializes an xr session
          * @param xrSessionMode mode to initialize
+         * @param optionalFeatures defines optional values to pass to the session builder
          * @returns a promise which will resolve once the session has been initialized
          */
-        initializeSessionAsync(xrSessionMode: XRSessionMode): any;
+        initializeSessionAsync(xrSessionMode: XRSessionMode, optionalFeatures?: any): any;
         /**
          * Sets the reference space on the xr session
          * @param referenceSpace space to set
@@ -41754,12 +41979,12 @@ declare module BABYLON {
         exitXRAsync(): Promise<void>;
         /**
          * Enters XR mode (This must be done within a user interaction in most browsers eg. button click)
-         * @param sessionCreationOptions options for the XR session
+         * @param sessionMode options for the XR session
          * @param referenceSpaceType frame of reference of the XR session
          * @param renderTarget the output canvas that will be used to enter XR mode
          * @returns promise that resolves after xr mode has entered
          */
-        enterXRAsync(sessionCreationOptions: XRSessionMode, referenceSpaceType: XRReferenceSpaceType, renderTarget: WebXRRenderTarget): any;
+        enterXRAsync(sessionMode: XRSessionMode, referenceSpaceType: XRReferenceSpaceType, renderTarget: WebXRRenderTarget): any;
         /**
          * Updates the global position of the camera by moving the camera's container
          * This should be used instead of modifying the camera's position as it will be overwritten by an xrSessions's update frame
@@ -44513,6 +44738,44 @@ declare module BABYLON {
              * @returns the effective sample count (could be 0 if multisample render targets are not supported)
              */
             updateMultipleRenderTargetTextureSampleCount(textures: Nullable<InternalTexture[]>, samples: number): number;
+        }
+}
+declare module BABYLON {
+    /**
+     * Class used to define an additional view for the engine
+     * @see https://doc.babylonjs.com/how_to/multi_canvases
+     */
+    export class EngineView {
+        /** Defines the canvas where to render the view */
+        target: HTMLCanvasElement;
+        /** Defines an optional camera used to render the view (will use active camera else) */
+        camera?: Camera;
+    }
+        interface Engine {
+            /**
+             * Gets or sets the  HTML element to use for attaching events
+             */
+            inputElement: Nullable<HTMLElement>;
+            /**
+             * Gets the current engine view
+             * @see https://doc.babylonjs.com/how_to/multi_canvases
+             */
+            activeView: Nullable<EngineView>;
+            /** Gets or sets the list of views */
+            views: EngineView[];
+            /**
+             * Register a new child canvas
+             * @param canvas defines the canvas to register
+             * @param camera defines an optional camera to use with this canvas (it will overwrite the scene.camera for this view)
+             * @returns the associated view
+             */
+            registerView(canvas: HTMLCanvasElement, camera?: Camera): EngineView;
+            /**
+             * Remove a registered child canvas
+             * @param canvas defines the canvas to remove
+             * @returns the current engine
+             */
+            unRegisterView(canvas: HTMLCanvasElement): Engine;
         }
 }
 declare module BABYLON {
@@ -47692,6 +47955,7 @@ declare module BABYLON {
         ROUGHNESSSTOREINMETALMAPGREEN: boolean;
         METALLNESSSTOREINMETALMAPBLUE: boolean;
         AOSTOREINMETALMAPRED: boolean;
+        METALLICF0FACTORFROMMETALLICMAP: boolean;
         ENVIRONMENTBRDF: boolean;
         ENVIRONMENTBRDF_RGBD: boolean;
         NORMAL: boolean;
@@ -47934,6 +48198,19 @@ declare module BABYLON {
          * Can also be used to scale the roughness values of the metallic texture.
          */
         protected _roughness: Nullable<number>;
+        /**
+         * Specifies the an F0 factor to help configuring the material F0.
+         * Instead of the default 4%, 8% * factor will be used. As the factor is defaulting
+         * to 0.5 the previously hard coded value stays the same.
+         * Can also be used to scale the F0 values of the metallic texture.
+         */
+        protected _metallicF0Factor: number;
+        /**
+         * Specifies whether the F0 factor can be fetched from the mettalic texture.
+         * If set to true, please adapt the metallicF0Factor to ensure it fits with
+         * your expectation as it multiplies with the texture data.
+         */
+        protected _useMetallicF0FactorFromMetallicTexture: boolean;
         /**
          * Used to enable roughness/glossiness fetch from a separate channel depending on the current mode.
          * Gray Scale represents roughness in metallic mode and glossiness in specular mode.
@@ -48417,6 +48694,19 @@ declare module BABYLON {
          * Can also be used to scale the roughness values of the metallic texture.
          */
         roughness: Nullable<number>;
+        /**
+         * Specifies the an F0 factor to help configuring the material F0.
+         * Instead of the default 4%, 8% * factor will be used. As the factor is defaulting
+         * to 0.5 the previously hard coded value stays the same.
+         * Can also be used to scale the F0 values of the metallic texture.
+         */
+        metallicF0Factor: number;
+        /**
+         * Specifies whether the F0 factor can be fetched from the mettalic texture.
+         * If set to true, please adapt the metallicF0Factor to ensure it fits with
+         * your expectation as it multiplies with the texture data.
+         */
+        useMetallicF0FactorFromMetallicTexture: boolean;
         /**
          * Used to enable roughness/glossiness fetch from a separate channel depending on the current mode.
          * Gray Scale represents roughness in metallic mode and glossiness in specular mode.
@@ -51966,6 +52256,17 @@ declare module BABYLON {
 declare module BABYLON {
     /** @hidden */
     export var _BabylonLoaderRegistered: boolean;
+    /**
+     * Helps setting up some configuration for the babylon file loader.
+     */
+    export class BabylonFileLoaderConfiguration {
+        /**
+         * The loader does not allow injecting custom physix engine into the plugins.
+         * Unfortunately in ES6, we need to manually inject them into the plugin.
+         * So you could set this variable to your engine import to make it work.
+         */
+        static LoaderInjectedPhysicsEngine: any;
+    }
 }
 declare module BABYLON {
     /**
@@ -52715,6 +53016,37 @@ declare module BABYLON {
 }
 declare module BABYLON {
     /**
+     * Class used to store 2D array textures containing user data
+     */
+    export class RawTexture2DArray extends Texture {
+        /** Gets or sets the texture format to use */
+        format: number;
+        private _engine;
+        /**
+         * Create a new RawTexture2DArray
+         * @param data defines the data of the texture
+         * @param width defines the width of the texture
+         * @param height defines the height of the texture
+         * @param depth defines the number of layers of the texture
+         * @param format defines the texture format to use
+         * @param scene defines the hosting scene
+         * @param generateMipMaps defines a boolean indicating if mip levels should be generated (true by default)
+         * @param invertY defines if texture must be stored with Y axis inverted
+         * @param samplingMode defines the sampling mode to use (Texture.TRILINEAR_SAMPLINGMODE by default)
+         * @param textureType defines the texture Type (Engine.TEXTURETYPE_UNSIGNED_INT, Engine.TEXTURETYPE_FLOAT...)
+         */
+        constructor(data: ArrayBufferView, width: number, height: number, depth: number, 
+        /** Gets or sets the texture format to use */
+        format: number, scene: Scene, generateMipMaps?: boolean, invertY?: boolean, samplingMode?: number, textureType?: number);
+        /**
+         * Update the texture with new data
+         * @param data defines the data to store in the texture
+         */
+        update(data: ArrayBufferView): void;
+    }
+}
+declare module BABYLON {
+    /**
      * Creates a refraction texture used by refraction channel of the standard material.
      * It is like a mirror but to see through a material.
      * @see https://doc.babylonjs.com/how_to/reflect#refraction
@@ -53087,6 +53419,7 @@ declare module BABYLON {
         private _injectVertexCode;
         private _writeOutput;
         protected _buildBlock(state: NodeMaterialBuildState): this | undefined;
+        protected _dumpPropertiesCode(): string;
         serialize(): any;
         _deserialize(serializationObject: any, scene: Scene, rootUrl: string): void;
     }
@@ -53884,6 +54217,8 @@ declare module BABYLON {
         protected _dumpPropertiesCode(): string;
         /** @hidden */
         _dumpCode(uniqueNames: string[], alreadyDumped: NodeMaterialBlock[]): string;
+        /** @hidden */
+        _dumpCodeForOutputConnections(): string;
         /**
          * Clone the current block to a new identical block
          * @param scene defines the hosting scene
@@ -55840,18 +56175,9 @@ declare module BABYLON {
          */
         getClassName(): string;
         /**
-         * Gets the world normal component
-         */
-        readonly worldNormal: NodeMaterialConnectionPoint;
-        /**
-         * Gets the view direction input component
-         */
-        readonly viewDirection: NodeMaterialConnectionPoint;
-        /**
          * Gets the output component
          */
         readonly output: NodeMaterialConnectionPoint;
-        autoConfigure(material: NodeMaterial): void;
         protected _buildBlock(state: NodeMaterialBuildState): this;
     }
 }
@@ -58707,21 +59033,21 @@ declare module BABYLON {
          * @param mesh is any Mesh object that will be used as a surface model for the points
          * @param nb (positive integer) the number of particles to be created from this model
          * @param colorWith determines whether a point is colored using color (default), uv, random, stated or none (invisible)
-         * @param color (color3) to be used when colorWith is stated
+         * @param color (color4) to be used when colorWith is stated or color (number) when used to specify texture position
          * @param range (number from 0 to 1) to determine the variation in shape and tone for a stated color
          * @returns the number of groups in the system
          */
-        addSurfacePoints(mesh: Mesh, nb: number, colorWith?: number, color?: Color4, range?: number): number;
+        addSurfacePoints(mesh: Mesh, nb: number, colorWith?: number, color?: Color4 | number, range?: number): number;
         /**
          * Adds points to the PCS inside the model shape
          * @param mesh is any Mesh object that will be used as a surface model for the points
          * @param nb (positive integer) the number of particles to be created from this model
-         * @param colorWith determines whether a point is colored using color (default), uv, random, stated or none (invisible),
-         * @param color (color4) to be used when colorWith is stated
+         * @param colorWith determines whether a point is colored using color (default), uv, random, stated or none (invisible)
+         * @param color (color4) to be used when colorWith is stated or color (number) when used to specify texture position
          * @param range (number from 0 to 1) to determine the variation in shape and tone for a stated color
          * @returns the number of groups in the system
          */
-        addVolumePoints(mesh: Mesh, nb: number, colorWith?: number, color?: Color4, range?: number): number;
+        addVolumePoints(mesh: Mesh, nb: number, colorWith?: number, color?: Color4 | number, range?: number): number;
         /**
          *  Sets all the particles : this method actually really updates the mesh according to the particle positions, rotations, colors, textures, etc.
          *  This method calls `updateParticle()` for each particle of the SPS.
@@ -58993,6 +59319,11 @@ declare module BABYLON {
          * @hidden
          */
         _groupDensity: number[];
+        /**
+         * Only when points are colored by texture carries pointer to texture list array
+         * @hidden
+         */
+        _textureNb: number;
         /**
          * Creates a points group object. This is an internal reference to produce particles for the PCS.
          * PCS internal tool, don't use it manually.
@@ -60616,6 +60947,8 @@ declare module BABYLON {
          * Gets pipeline name
          */
         readonly name: string;
+        /** Gets the list of attached cameras */
+        readonly cameras: Camera[];
         /**
          * Initializes a PostProcessRenderPipeline
          * @param engine engine to add the pipeline to

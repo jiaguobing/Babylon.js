@@ -170,11 +170,11 @@ class NativeTexture extends InternalTexture {
 }
 
 /** @hidden */
-declare var nativeEngine: INativeEngine;
+declare var _native: any;
 
 /** @hidden */
 export class NativeEngine extends Engine {
-    private readonly _native: INativeEngine = nativeEngine;
+    private readonly _native: INativeEngine = new _native.Engine();
 
     public getHardwareScalingLevel(): number {
         return 1.0;
@@ -1292,6 +1292,8 @@ export class NativeEngine extends Engine {
             internalTexture = this.emptyCubeTexture;
         } else if (texture.is3D) {
             internalTexture = this.emptyTexture3D;
+        } else if (texture.is2DArray) {
+            internalTexture = this.emptyTexture2DArray;
         } else {
             internalTexture = this.emptyTexture;
         }

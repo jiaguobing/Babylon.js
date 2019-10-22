@@ -1,5 +1,11 @@
 var engine = null;
 
+handleException = function(parent, e) {
+    parent.utils.showError(e.message, e);
+    // Also log error in console to help debug playgrounds
+    console.error(e);
+}
+
 /**
  * Compile the script in the editor, and run the preview in the canvas
  */
@@ -40,7 +46,7 @@ compileAndRun = function(parent, fpsLabel) {
         var createEngineFunction = "createDefaultEngine";
         var createSceneFunction;
 
-        parent.monacoCreator.getRunCode(function (code) {
+        parent.monacoCreator.getRunCode().then(code => {
             var createDefaultEngine = function () {
                 return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
             }
@@ -172,12 +178,11 @@ compileAndRun = function(parent, fpsLabel) {
                     }
                 }
             }
-        }.bind(this));
-
+        }).catch(e => {
+            handleException(parent, e);
+        });
     } catch (e) {
-        parent.utils.showError(e.message, e);
-        // Also log error in console to help debug playgrounds
-        console.error(e);
+        handleException(parent, e);
     }
 };
 
